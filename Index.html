@@ -2,62 +2,166 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS MKT — Mobile Store</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS MKT — Cyber Store</title>
+    <!-- SDK Oficial de Mercado Pago -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
-        :root { --bg: #0b0d14; --card: #131722; --cyan: #00f0ff; --green: #00ff66; --pink: #e024bf; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
-        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--cyan); }
-        .logo { font-size: 1.4rem; font-weight: 900; }
-        .logo span { color: var(--green); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
-        .card img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; }
-        .btn { background: var(--cyan); border: none; color: #000; padding: 10px; font-weight: bold; border-radius: 6px; margin-top: 10px; width: 100%; }
-        .btn:disabled { background: #444; color: #888; }
-        .stock { font-size: 0.8rem; color: var(--green); margin-top: 5px; }
-        .out { color: var(--pink); }
+        :root {
+            --bg-dark: #08090d;
+            --bg-card: #11141d;
+            --neon-cyan: #00f0ff;
+            --neon-green: #00ff66;
+            --neon-magenta: #e024bf;
+            --text-main: #f0f4f8;
+            --text-sub: #7a889b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; }
+
+        /* HEADER MOBILE FIRST */
+        header {
+            position: sticky; top: 0; z-index: 90;
+            background: rgba(8, 9, 13, 0.85); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .logo { font-size: 1.3rem; font-weight: 900; letter-spacing: 1.5px; color: #fff; }
+        .logo span { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+
+        .cart-btn {
+            background: rgba(0, 240, 255, 0.1); border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan); padding: 8px 14px; border-radius: 20px;
+            font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;
+        }
+
+        /* BANNER IMPACTANTE */
+        .hero {
+            margin: 15px; padding: 20px; border-radius: 12px;
+            background: linear-gradient(135deg, #180922 0%, #0c1826 100%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+        }
+        .hero-tag { background: var(--neon-magenta); color: #fff; font-size: 0.65rem; font-weight: bold; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; }
+        .hero h2 { font-size: 1.4rem; margin: 8px 0 4px; }
+        .hero p { font-size: 0.8rem; color: var(--text-sub); line-height: 1.3; }
+
+        /* GRID DE PRODUCTOS */
+        .container { padding: 0 15px; }
+        .products-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 15px;
+        }
+
+        .card {
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+        .card-cat { font-size: 0.65rem; color: var(--neon-cyan); text-transform: uppercase; font-weight: bold; }
+        .card-title { font-size: 0.9rem; font-weight: 600; margin: 2px 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-stock { font-size: 0.7rem; color: var(--neon-green); font-weight: 600; }
+        .card-stock.out { color: var(--neon-magenta); }
+        .card-price { font-size: 1.1rem; font-weight: bold; color: #fff; margin: 6px 0; }
+
+        .btn-add {
+            background: rgba(0, 255, 102, 0.1); border: 1px solid var(--neon-green);
+            color: var(--neon-green); padding: 8px; border-radius: 6px;
+            font-weight: bold; font-size: 0.8rem; width: 100%; cursor: pointer;
+        }
+        .btn-add:disabled { border-color: #333; color: #555; background: transparent; }
+
+        /* MODAL LATERAL/CARRITO (DRAWER) */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: 0.3s; z-index: 99; }
+        .overlay.active { opacity: 1; pointer-events: all; }
+
+        .cart-drawer {
+            position: fixed; top: 0; right: -100%; width: 85%; max-width: 360px; height: 100%;
+            background: var(--bg-card); border-left: 1px solid var(--neon-cyan);
+            z-index: 100; transition: right 0.3s ease; display: flex; flex-direction: column; padding: 20px;
+        }
+        .cart-drawer.open { right: 0; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
+        .cart-items { flex: 1; overflow-y: auto; margin: 15px 0; display: flex; flex-direction: column; gap: 10px; }
+        .cart-item { background: var(--bg-dark); padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .mp-btn {
+            background: #009ee3; color: #fff; border: none; padding: 12px; border-radius: 8px;
+            font-weight: bold; font-size: 0.95rem; width: 100%; cursor: pointer; display: flex;
+            justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,158,227,0.3);
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo">NEXUS<span>MKT</span></div>
-        <div id="cartCount">🛒 (0)</div>
+        <button class="cart-btn" onclick="toggleCart()">🛒 <span id="cartCount">0</span></button>
     </header>
 
-    <div class="grid" id="products">Cargando catálogo en red...</div>
+    <div class="hero">
+        <span class="hero-tag">SISTEMA ACTIVO</span>
+        <h2>TIENDA OFICIAL NEXUS</h2>
+        <p>Selecciona tu equipamiento e integra el pago seguro mediante Mercado Pago de forma instantánea.</p>
+    </div>
+
+    <main class="container">
+        <div class="products-grid" id="productsGrid">Cargando datos...</div>
+    </main>
+
+    <!-- CARRITO MODAL -->
+    <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+    <aside class="cart-drawer" id="cartDrawer">
+        <div class="cart-header">
+            <h3>Tu Carrito</h3>
+            <button style="background:none; border:none; color:#fff; font-size: 1.2rem;" onclick="toggleCart()">✕</button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:bold; margin-bottom: 15px;">
+                <span>Total:</span>
+                <span id="cartTotal" style="color:var(--neon-green)">$0</span>
+            </div>
+            <button class="mp-btn" id="payBtn" onclick="payWithMercadoPago()">
+                💳 Pagar con Mercado Pago
+            </button>
+        </div>
+    </aside>
 
     <script>
         let products = [];
         let cart = [];
 
-        async function loadProducts() {
+        async function fetchProducts() {
             try {
                 const res = await fetch('/api/inventory');
                 products = await res.json();
-                render();
-            } catch(e) {
-                console.error("Error conectando con Vercel API", e);
+                renderProducts();
+            } catch (e) {
+                console.error("Error conectando con la API", e);
             }
         }
 
-        function render() {
-            const container = document.getElementById('products');
-            container.innerHTML = '';
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
             products.forEach(p => {
                 const isOut = p.stock <= 0;
-                container.innerHTML += `
-                    <div class="card">
+                grid.innerHTML += `
+                    <div class="card" style="opacity: ${isOut ? '0.5' : '1'}">
                         <img src="${p.img}">
                         <div>
-                            <h4>${p.name}</h4>
-                            <div class="stock ${isOut ? 'out' : ''}">${isOut ? 'AGOTADO' : 'Stock: ' + p.stock}</div>
+                            <span class="card-cat">${p.category}</span>
+                            <div class="card-title">${p.name}</div>
+                            <div class="card-stock ${isOut ? 'out' : ''}">${isOut ? 'AGOTADO' : 'Stock: ' + p.stock}</div>
                         </div>
                         <div>
-                            <p><b>$${p.price}</b></p>
-                            <button class="btn" onclick="buy(${p.id})" ${isOut ? 'disabled' : ''}>
-                                ${isOut ? 'Sin Stock' : 'Comprar'}
+                            <div class="card-price">$${p.price.toLocaleString()}</div>
+                            <button class="btn-add" onclick="addToCart(${p.id})" ${isOut ? 'disabled' : ''}>
+                                ${isOut ? 'Sin Stock' : '+ Agregar'}
                             </button>
                         </div>
                     </div>
@@ -65,19 +169,88 @@
             });
         }
 
-        async function buy(id) {
-            // Descontar inventario en Vercel
-            await fetch('/api/inventory', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: id, change: -1 })
-            });
-            alert("¡Compra procesada con éxito!");
-            loadProducts(); // Recargar existencias en tiempo real
+        function addToCart(id) {
+            const prod = products.find(p => p.id === id);
+            const exist = cart.find(c => c.id === id);
+            if (exist) {
+                if (exist.quantity < prod.stock) exist.quantity++;
+            } else {
+                cart.push({ ...prod, quantity: 1 });
+            }
+            updateCartUI();
         }
 
-        loadProducts();
-        setInterval(loadProducts, 4000); // Refresco automático
+        function updateCartUI() {
+            const items = document.getElementById('cartItems');
+            const count = document.getElementById('cartCount');
+            const total = document.getElementById('cartTotal');
+            items.innerHTML = '';
+            let sum = 0, totalCount = 0;
+
+            cart.forEach(item => {
+                sum += item.price * item.quantity;
+                totalCount += item.quantity;
+                items.innerHTML += `
+                    <div class="cart-item">
+                        <div>
+                            <b>${item.name}</b><br>
+                            <small style="color:var(--neon-green)">$${item.price} x ${item.quantity}</small>
+                        </div>
+                        <button style="background:none; border:none; color:var(--neon-magenta); font-weight:bold" onclick="removeFromCart(${item.id})">Quitar</button>
+                    </div>
+                `;
+            });
+
+            count.innerText = totalCount;
+            total.innerText = `$${sum.toLocaleString()}`;
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(c => c.id !== id);
+            updateCartUI();
+        }
+
+        function toggleCart() {
+            document.getElementById('cartDrawer').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        // PROCESAR PAGO REAL CON MERCADO PAGO
+        async function payWithMercadoPago() {
+            if (cart.length === 0) return alert("Tu carrito está vacío.");
+
+            const btn = document.getElementById('payBtn');
+            btn.innerText = "Abriendo Mercado Pago...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'createPreference',
+                        cartItems: cart
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.init_point) {
+                    // Redirige al checkout oficial de Mercado Pago
+                    window.location.href = data.init_point;
+                } else {
+                    alert("Error generando el pago. Verifica tus credenciales.");
+                }
+            } catch (err) {
+                alert("Error al intentar procesar la transacción.");
+            } finally {
+                btn.innerText = "💳 Pagar con Mercado Pago";
+                btn.disabled = false;
+            }
+        }
+
+        fetchProducts();
+        setInterval(fetchProducts, 4000); // Sincroniza inventario automáticamente
     </script>
 </body>
 </html>
