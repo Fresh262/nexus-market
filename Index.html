@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS MKT — Mobile Store</title>
+    <style>
+        :root { --bg: #0b0d14; --card: #131722; --cyan: #00f0ff; --green: #00ff66; --pink: #e024bf; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--cyan); }
+        .logo { font-size: 1.4rem; font-weight: 900; }
+        .logo span { color: var(--green); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+        .card img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; }
+        .btn { background: var(--cyan); border: none; color: #000; padding: 10px; font-weight: bold; border-radius: 6px; margin-top: 10px; width: 100%; }
+        .btn:disabled { background: #444; color: #888; }
+        .stock { font-size: 0.8rem; color: var(--green); margin-top: 5px; }
+        .out { color: var(--pink); }
+    </style>
+</head>
+<body>
 
+    <header>
+        <div class="logo">NEXUS<span>MKT</span></div>
+        <div id="cartCount">🛒 (0)</div>
+    </header>
+
+    <div class="grid" id="products">Cargando catálogo en red...</div>
+
+    <script>
+        let products = [];
+        let cart = [];
+
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/inventory');
+                products = await res.json();
+                render();
+            } catch(e) {
+                console.error("Error conectando con Vercel API", e);
+            }
+        }
+
+        function render() {
+            const container = document.getElementById('products');
+            container.innerHTML = '';
+            products.forEach(p => {
+                const isOut = p.stock <= 0;
+                container.innerHTML += `
+                    <div class="card">
+                        <img src="${p.img}">
+                        <div>
+                            <h4>${p.name}</h4>
+                            <div class="stock ${isOut ? 'out' : ''}">${isOut ? 'AGOTADO' : 'Stock: ' + p.stock}</div>
+                        </div>
+                        <div>
+                            <p><b>$${p.price}</b></p>
+                            <button class="btn" onclick="buy(${p.id})" ${isOut ? 'disabled' : ''}>
+                                ${isOut ? 'Sin Stock' : 'Comprar'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function buy(id) {
+            // Descontar inventario en Vercel
+            await fetch('/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: id, change: -1 })
+            });
+            alert("¡Compra procesada con éxito!");
+            loadProducts(); // Recargar existencias en tiempo real
+        }
+
+        loadProducts();
+        setInterval(loadProducts, 4000); // Refresco automático
+    </script>
+</body>
+</html>
