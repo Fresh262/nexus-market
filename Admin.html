@@ -1,1 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin — Movil</title>
+    <style>
+        body { background: #0b0d14; color: #fff; font-family: sans-serif; padding: 15px; }
+        .item { background: #131722; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 8px 15px; font-weight: bold; border: none; border-radius: 4px; }
+        .btn-add { background: #00ff66; color: #000; }
+        .btn-sub { background: #e024bf; color: #fff; }
+    </style>
+</head>
+<body>
+    <h2>📦 Panel de Gestión</h2>
+    <div id="list">Cargando inventario...</div>
 
+    <script>
+        async function load() {
+            const res = await fetch('/api/inventory');
+            const data = await res.json();
+            const list = document.getElementById('list');
+            list.innerHTML = '';
+            
+            data.forEach(p => {
+                list.innerHTML += `
+                    <div class="item">
+                        <div>
+                            <b>${p.name}</b><br>
+                            <small style="color:#00f0ff">Stock: ${p.stock}</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-add" onclick="change(${p.id}, 1)">+1</button>
+                            <button class="btn btn-sub" onclick="change(${p.id}, -1)">-1</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function change(productId, change) {
+            await fetch('/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId, change })
+            });
+            load();
+        }
+
+        load();
+    </script>
+</body>
+</html>
